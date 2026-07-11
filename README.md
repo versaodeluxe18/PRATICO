@@ -1,0 +1,2 @@
+# PRATICO
+Editor de imagens
