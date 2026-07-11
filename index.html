@@ -80,75 +80,230 @@
         },
       }
     }catch(_e){}</script></head><body class="bg-background text-on-background font-ui-body text-ui-body overflow-hidden">
+    <style>
+        html, body { height: 100%; }
+        .canvas-area { min-height: 100vh; background-color: #f8f9fb; }
+        .checkerboard {
+            background-image:
+                linear-gradient(45deg, #d9dadc 25%, transparent 25%),
+                linear-gradient(-45deg, #d9dadc 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #d9dadc 75%),
+                linear-gradient(-45deg, transparent 75%, #d9dadc 75%);
+            background-size: 24px 24px;
+            background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+        }
+        #stage-wrapper { transform-origin: center center; }
+        #stage { background: transparent; touch-action: none; }
+        .stage-image { position: absolute; max-width: none; user-select: none; cursor: move; touch-action: none; }
+        .stage-image.selected { outline: 2px solid #000; outline-offset: 2px; }
+        .tool-label { font-size: 11px; font-weight: 600; }
+    </style>
 
-    <!-- Main Workspace -->
-    <main class="canvas-area relative flex items-center justify-center checkerboard">
-        <!-- Central Image/Artwork Placeholder -->
-        <div class="relative shadow-2xl bg-white p-1 border border-outline-variant max-w-[80%] max-h-[80%]">
-            <img class="block w-full h-auto object-contain max-h-[85vh]" data-alt="A high-resolution, professional studio photograph of a minimalist ceramic vase on a clean wooden table. The lighting is soft and directional from a large window, creating gentle shadows. The color palette is composed of warm earth tones, soft whites, and natural wood textures, evoking a serene and high-end aesthetic. Minimalist digital art vibes with focus on texture and form." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIFG-wd8pUkbFwzD2UUVLE-HwZBw2JjZFC_3g_hu9H9Stxqx3QarrHWMAsOvWKHcVFh8uUViM8IxPr0ey-oAODxMXdADstlxjFU7B0m253QJNC_2rMeyYns0xsgqr8edR90YPCiMgWWwuIAhB0zbIcCh_1yYLqxPSS2bpgokKq4zp17LxtrNroc8Q1UieDpESCHHiAfp7R2PldrX8BBq-gvheoOyjJs3etIcqoRy5DgDjv1ZjF6Iu98Q">
-            <!-- Selection Markers -->
-            <div class="absolute -top-1 -left-1 w-2 h-2 bg-primary border border-white"></div>
-            <div class="absolute -top-1 -right-1 w-2 h-2 bg-primary border border-white"></div>
-            <div class="absolute -bottom-1 -left-1 w-2 h-2 bg-primary border border-white"></div>
-            <div class="absolute -bottom-1 -right-1 w-2 h-2 bg-primary border border-white"></div>
+    <main class="canvas-area relative flex flex-col items-center justify-center checkerboard gap-4" id="workspace">
+        <div class="fixed top-4 left-1/2 -translate-x-1/2 z-40 rounded-full bg-surface/95 border border-outline-variant px-4 py-2 shadow text-on-surface-variant">
+            <span id="stage-info">Palco: 1080 × 1080 px · Zoom: 50%</span>
         </div>
 
-        <!-- Minimalist Floating Add Action -->
-        <button class="fixed bottom-24 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-90 hover:shadow-xl z-50">
+        <div id="stage-wrapper" class="relative shadow-2xl border border-outline-variant" style="transform: scale(0.5);">
+            <div id="stage" class="relative overflow-hidden" style="width: 1080px; height: 1080px;"></div>
+        </div>
+
+        <button id="quick-import" class="fixed bottom-24 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-90 hover:shadow-xl z-50" title="Importar imagem">
             <span class="material-symbols-outlined text-2xl" data-icon="add">add</span>
         </button>
     </main>
 
-    <!-- DRAGGABLE FLOATING TOOLBAR (Primary Interface) -->
+    <input id="image-input" class="hidden" type="file" accept="image/*">
+
     <div class="fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-toolbar-gap px-4 py-2 z-50 bg-surface rounded-full shadow-lg border border-outline-variant cursor-grab active:cursor-grabbing select-none" id="floating-toolbar" style="min-width: auto;">
-        <!-- Drag Handle Icon -->
-        <div class="text-outline mr-2">
+        <div class="text-outline mr-2" id="toolbar-drag-handle" title="Arrastar barra">
             <span class="material-symbols-outlined text-sm">drag_indicator</span>
         </div>
         <div class="flex items-center gap-1">
-            <button class="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-surface-container transition-all active:scale-95 text-on-surface-variant font-ui-label-sm text-ui-label-sm"><span class="material-symbols-outlined text-[20px]" data-icon="photo">photo</span></button>
+            <button id="import-image" class="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-surface-container transition-all active:scale-95 text-on-surface-variant font-ui-label-sm text-ui-label-sm" title="Importar imagem">
+                <span class="material-symbols-outlined text-[20px]" data-icon="photo">photo</span><span class="tool-label">Imagem</span>
+            </button>
             <div class="w-px h-6 bg-outline-variant mx-1"></div>
-            <button class="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-surface-container transition-all active:scale-95 text-on-surface-variant font-ui-label-sm text-ui-label-sm"><span class="material-symbols-outlined text-[20px]" data-icon="aspect_ratio">aspect_ratio</span></button>
+            <label class="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-surface-container transition-all text-on-surface-variant font-ui-label-sm text-ui-label-sm" title="Escolher tamanho do palco">
+                <span class="material-symbols-outlined text-[20px]" data-icon="aspect_ratio">aspect_ratio</span>
+                <select id="stage-size" class="border-0 bg-transparent p-0 pr-7 text-ui-label-sm focus:ring-0 cursor-pointer">
+                    <option value="1080x1080">1080 × 1080</option>
+                    <option value="1920x1080">1920 × 1080</option>
+                    <option value="1080x1920">1080 × 1920</option>
+                    <option value="1200x1200">1200 × 1200</option>
+                    <option value="custom">Personalizado</option>
+                </select>
+            </label>
             <div class="w-px h-6 bg-outline-variant mx-1"></div>
-            <div class="flex items-center bg-secondary-container rounded-full p-1 ml-2">
-                <button class="flex items-center gap-1 px-3 py-1.5 rounded-full hover:bg-secondary-fixed text-on-secondary-container font-ui-label-sm text-ui-label-sm transition-all"><span class="material-symbols-outlined text-[18px]" data-icon="download">download</span></button>
-                <button class="flex items-center gap-1 px-3 py-1.5 rounded-full hover:bg-secondary-fixed text-on-secondary-container font-ui-label-sm text-ui-label-sm transition-all"><span class="material-symbols-outlined text-[18px]" data-icon="download">download</span></button>
+            <div class="flex items-center gap-2 px-3 py-2 rounded-full text-on-surface-variant">
+                <span class="material-symbols-outlined text-[20px]" data-icon="zoom_in">zoom_in</span>
+                <input id="zoom-control" class="w-28 accent-black" type="range" min="10" max="150" value="50">
             </div>
-        </div>
-        <div class="ml-4 pl-4 border-l border-outline-variant">
-            <button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container">
-                <span class="material-symbols-outlined text-[20px]" data-icon="ios_share">ios_share</span>
+            <div class="w-px h-6 bg-outline-variant mx-1"></div>
+            <button id="save-png" class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-secondary-container hover:bg-secondary-fixed text-on-secondary-container font-ui-label-sm text-ui-label-sm transition-all" title="Salvar PNG com transparência">
+                <span class="material-symbols-outlined text-[18px]" data-icon="download">download</span><span class="tool-label">PNG</span>
             </button>
         </div>
     </div>
 
     <script>
-        // Micro-interaction: Draggable Toolbar Logic
         const toolbar = document.getElementById('floating-toolbar');
-        let isDragging = false;
-        let offsetX, offsetY;
+        const stage = document.getElementById('stage');
+        const stageWrapper = document.getElementById('stage-wrapper');
+        const stageInfo = document.getElementById('stage-info');
+        const imageInput = document.getElementById('image-input');
+        const importImageButton = document.getElementById('import-image');
+        const quickImportButton = document.getElementById('quick-import');
+        const stageSizeSelect = document.getElementById('stage-size');
+        const zoomControl = document.getElementById('zoom-control');
+        const savePngButton = document.getElementById('save-png');
 
-        toolbar.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            offsetX = e.clientX - toolbar.getBoundingClientRect().left;
-            offsetY = e.clientY - toolbar.getBoundingClientRect().top;
-            toolbar.style.transition = 'none';
+        const state = { stageWidth: 1080, stageHeight: 1080, zoom: 0.5, selectedImage: null };
+
+        function updateStageInfo() {
+            stageInfo.textContent = `Palco: ${state.stageWidth} × ${state.stageHeight} px · Zoom: ${Math.round(state.zoom * 100)}%`;
+        }
+
+        function setStageSize(width, height) {
+            state.stageWidth = width;
+            state.stageHeight = height;
+            stage.style.width = `${width}px`;
+            stage.style.height = `${height}px`;
+            updateStageInfo();
+        }
+
+        function setZoom(percent) {
+            state.zoom = Number(percent) / 100;
+            stageWrapper.style.transform = `scale(${state.zoom})`;
+            updateStageInfo();
+        }
+
+        function selectImage(image) {
+            document.querySelectorAll('.stage-image.selected').forEach((item) => item.classList.remove('selected'));
+            state.selectedImage = image;
+            if (image) image.classList.add('selected');
+        }
+
+        function addMovableImage(src) {
+            const image = new Image();
+            image.className = 'stage-image';
+            image.src = src;
+            image.draggable = false;
+            image.onload = () => {
+                const maxWidth = state.stageWidth * 0.6;
+                const maxHeight = state.stageHeight * 0.6;
+                const scale = Math.min(1, maxWidth / image.naturalWidth, maxHeight / image.naturalHeight);
+                image.dataset.width = Math.round(image.naturalWidth * scale);
+                image.dataset.height = Math.round(image.naturalHeight * scale);
+                image.style.width = `${image.dataset.width}px`;
+                image.style.height = `${image.dataset.height}px`;
+                image.dataset.x = Math.round((state.stageWidth - Number(image.dataset.width)) / 2);
+                image.dataset.y = Math.round((state.stageHeight - Number(image.dataset.height)) / 2);
+                image.style.left = `${image.dataset.x}px`;
+                image.style.top = `${image.dataset.y}px`;
+                selectImage(image);
+            };
+            image.addEventListener('pointerdown', startImageDrag);
+            stage.appendChild(image);
+        }
+
+        function startImageDrag(event) {
+            event.preventDefault();
+            const image = event.currentTarget;
+            selectImage(image);
+            image.setPointerCapture(event.pointerId);
+            const startX = event.clientX;
+            const startY = event.clientY;
+            const initialX = Number(image.dataset.x || 0);
+            const initialY = Number(image.dataset.y || 0);
+
+            function moveImage(moveEvent) {
+                const nextX = initialX + (moveEvent.clientX - startX) / state.zoom;
+                const nextY = initialY + (moveEvent.clientY - startY) / state.zoom;
+                image.dataset.x = Math.round(nextX);
+                image.dataset.y = Math.round(nextY);
+                image.style.left = `${image.dataset.x}px`;
+                image.style.top = `${image.dataset.y}px`;
+            }
+
+            function stopImageDrag() {
+                image.removeEventListener('pointermove', moveImage);
+                image.removeEventListener('pointerup', stopImageDrag);
+                image.removeEventListener('pointercancel', stopImageDrag);
+            }
+
+            image.addEventListener('pointermove', moveImage);
+            image.addEventListener('pointerup', stopImageDrag);
+            image.addEventListener('pointercancel', stopImageDrag);
+        }
+
+        function openImporter() { imageInput.click(); }
+
+        imageInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => addMovableImage(reader.result);
+            reader.readAsDataURL(file);
+            imageInput.value = '';
         });
 
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            
-            toolbar.style.left = `${e.clientX - offsetX}px`;
-            toolbar.style.top = `${e.clientY - offsetY}px`;
+        stageSizeSelect.addEventListener('change', () => {
+            if (stageSizeSelect.value === 'custom') {
+                const width = Number(prompt('Largura do palco em pixels:', state.stageWidth));
+                const height = Number(prompt('Altura do palco em pixels:', state.stageHeight));
+                if (width > 0 && height > 0) setStageSize(Math.round(width), Math.round(height));
+                return;
+            }
+            const [width, height] = stageSizeSelect.value.split('x').map(Number);
+            setStageSize(width, height);
+        });
+
+        zoomControl.addEventListener('input', (event) => setZoom(event.target.value));
+        importImageButton.addEventListener('click', openImporter);
+        quickImportButton.addEventListener('click', openImporter);
+
+        savePngButton.addEventListener('click', () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = state.stageWidth;
+            canvas.height = state.stageHeight;
+            const context = canvas.getContext('2d');
+            [...stage.querySelectorAll('.stage-image')].forEach((image) => {
+                context.drawImage(
+                    image,
+                    Number(image.dataset.x || 0),
+                    Number(image.dataset.y || 0),
+                    Number(image.dataset.width || image.naturalWidth),
+                    Number(image.dataset.height || image.naturalHeight)
+                );
+            });
+            const link = document.createElement('a');
+            link.download = `palco-${state.stageWidth}x${state.stageHeight}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        stage.addEventListener('pointerdown', (event) => {
+            if (event.target === stage) selectImage(null);
+        });
+
+        let isDraggingToolbar = false;
+        let offsetX, offsetY;
+        toolbar.addEventListener('mousedown', (event) => {
+            if (['BUTTON', 'SELECT', 'INPUT', 'OPTION'].includes(event.target.tagName)) return;
+            isDraggingToolbar = true;
+            offsetX = event.clientX - toolbar.getBoundingClientRect().left;
+            offsetY = event.clientY - toolbar.getBoundingClientRect().top;
+            toolbar.style.transition = 'none';
+        });
+        document.addEventListener('mousemove', (event) => {
+            if (!isDraggingToolbar) return;
+            toolbar.style.left = `${event.clientX - offsetX}px`;
+            toolbar.style.top = `${event.clientY - offsetY}px`;
             toolbar.style.bottom = 'auto';
             toolbar.style.transform = 'none';
         });
-
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
-
-        // Initialize Material Symbols
-        document.querySelectorAll('[data-icon]').forEach(el => {
-            const iconName = el.getAttribute('data-icon');
-            if (el.tagName === 'SPAN' && el.classList.contains('material-symbols</script></body></html>
+        document.addEventListener('mouseup', () => { isDraggingToolbar = false; });
+        updateStageInfo();
+    </script>
+</body></html>
