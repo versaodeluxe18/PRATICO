@@ -83,7 +83,8 @@
     </script><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script></head><body class="bg-background text-on-background font-ui-body text-ui-body overflow-hidden">
     <style>
         html, body { height: 100%; }
-        .canvas-area { min-height: 100vh; background-color: #f8f9fb; }
+        .canvas-area { min-height: 100vh; background-color: #ffffff; cursor: default; }
+        .canvas-area.panning { cursor: grabbing; }
         .checkerboard {
             background-image:
                 linear-gradient(45deg, #d9dadc 25%, transparent 25%),
@@ -94,19 +95,19 @@
             background-position: 0 0, 0 12px, 12px -12px, -12px 0;
         }
         #stage-wrapper { transform-origin: center center; }
-        #stage { background: transparent; touch-action: none; }
+        #stage { background-color: transparent; touch-action: none; }
         .stage-image { position: absolute; max-width: none; user-select: none; cursor: move; touch-action: none; }
         .stage-image.selected { outline: 2px solid #000; outline-offset: 2px; }
         .tool-label { font-size: 11px; font-weight: 600; }
     </style>
 
-    <main class="canvas-area relative flex flex-col items-center justify-center checkerboard gap-4" id="workspace">
+    <main class="canvas-area relative flex flex-col items-center justify-center gap-4" id="workspace">
         <div class="fixed top-4 left-1/2 -translate-x-1/2 z-40 rounded-full bg-surface/95 border border-outline-variant px-4 py-2 shadow text-on-surface-variant">
             <span id="stage-info">Palco: 1080 × 1080 px · Zoom: 50%</span>
         </div>
 
-        <div id="stage-wrapper" class="relative shadow-2xl border border-outline-variant" style="transform: scale(0.5);">
-            <div id="stage" class="relative overflow-hidden" style="width: 1080px; height: 1080px;"></div>
+        <div id="stage-wrapper" class="relative shadow-2xl border border-outline-variant" style="transform: translate(0px, 0px) scale(0.5);">
+            <div id="stage" class="relative overflow-hidden checkerboard" style="width: 1080px; height: 1080px;"></div>
         </div>
 
         <button id="quick-import" class="fixed bottom-24 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-90 hover:shadow-xl z-50" title="Importar imagem">
@@ -116,7 +117,7 @@
 
     <input id="image-input" class="hidden" type="file" accept="image/*">
 
-    <div class="fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-toolbar-gap px-4 py-2 z-50 bg-surface rounded-full shadow-lg border border-outline-variant cursor-grab active:cursor-grabbing select-none" id="floating-toolbar" style="min-width: auto;">
+    <div class="fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-toolbar-gap px-4 py-2 z-50 bg-surface/70 backdrop-blur-xl backdrop-saturate-150 rounded-full shadow-lg border border-white/60 ring-1 ring-outline-variant/40 cursor-grab active:cursor-grabbing select-none" id="floating-toolbar" style="min-width: auto;">
         <div class="text-outline mr-2" id="toolbar-drag-handle" title="Arrastar barra">
             <span class="material-symbols-outlined text-sm">drag_indicator</span>
         </div>
@@ -148,6 +149,7 @@
     </div>
 
     <script>
+        const workspace = document.getElementById('workspace');
         const toolbar = document.getElementById('floating-toolbar');
         const stage = document.getElementById('stage');
         const stageWrapper = document.getElementById('stage-wrapper');
@@ -159,7 +161,11 @@
         const zoomControl = document.getElementById('zoom-control');
         const savePngButton = document.getElementById('save-png');
 
-        const state = { stageWidth: 1080, stageHeight: 1080, zoom: 0.5, selectedImage: null };
+        const state = { stageWidth: 1080, stageHeight: 1080, zoom: 0.5, stageOffsetX: 0, stageOffsetY: 0, selectedImage: null };
+
+        function updateStageTransform() {
+            stageWrapper.style.transform = `translate(${state.stageOffsetX}px, ${state.stageOffsetY}px) scale(${state.zoom})`;
+        }
 
         function updateStageInfo() {
             stageInfo.textContent = `Palco: ${state.stageWidth} × ${state.stageHeight} px · Zoom: ${Math.round(state.zoom * 100)}%`;
@@ -175,7 +181,7 @@
 
         function setZoom(percent) {
             state.zoom = Number(percent) / 100;
-            stageWrapper.style.transform = `scale(${state.zoom})`;
+            updateStageTransform();
             updateStageInfo();
         }
 
@@ -209,6 +215,7 @@
         }
 
         function startImageDrag(event) {
+            if (event.button !== 0) return;
             event.preventDefault();
             const image = event.currentTarget;
             selectImage(image);
@@ -285,7 +292,37 @@
         });
 
         stage.addEventListener('pointerdown', (event) => {
-            if (event.target === stage) selectImage(null);
+            if (event.target === stage && event.button === 0) selectImage(null);
+        });
+
+        workspace.addEventListener('contextmenu', (event) => event.preventDefault());
+
+        workspace.addEventListener('pointerdown', (event) => {
+            if (event.button !== 2) return;
+            event.preventDefault();
+            workspace.classList.add('panning');
+            workspace.setPointerCapture(event.pointerId);
+            const startX = event.clientX;
+            const startY = event.clientY;
+            const initialOffsetX = state.stageOffsetX;
+            const initialOffsetY = state.stageOffsetY;
+
+            function panStage(moveEvent) {
+                state.stageOffsetX = initialOffsetX + moveEvent.clientX - startX;
+                state.stageOffsetY = initialOffsetY + moveEvent.clientY - startY;
+                updateStageTransform();
+            }
+
+            function stopPanning() {
+                workspace.classList.remove('panning');
+                workspace.removeEventListener('pointermove', panStage);
+                workspace.removeEventListener('pointerup', stopPanning);
+                workspace.removeEventListener('pointercancel', stopPanning);
+            }
+
+            workspace.addEventListener('pointermove', panStage);
+            workspace.addEventListener('pointerup', stopPanning);
+            workspace.addEventListener('pointercancel', stopPanning);
         });
 
         let isDraggingToolbar = false;
@@ -305,6 +342,7 @@
             toolbar.style.transform = 'none';
         });
         document.addEventListener('mouseup', () => { isDraggingToolbar = false; });
+        updateStageTransform();
         updateStageInfo();
     </script>
 </body></html>
