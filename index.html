@@ -97,18 +97,9 @@
          }
          #stage-wrapper { transform-origin: center center; }
          #stage { background-color: transparent; touch-action: none; }
-         .stage-image { position: absolute; max-width: none; user-select: none; cursor: move; touch-action: none; }
-         .stage-image.selected { outline: 2px solid #000; outline-offset: 2px; }
-         .stage-image.selected::after {
-             content: '';
-             position: absolute;
-             width: 100%;
-             height: 100%;
-             top: 0;
-             left: 0;
-             box-sizing: border-box;
-             pointer-events: none;
-         }
+         .image-container { position: absolute; max-width: none; user-select: none; cursor: move; touch-action: none; }
+         .image-container.selected { outline: 2px solid #000; outline-offset: 2px; }
+         .image-container img { display: block; width: 100%; height: 100%; }
          .resize-handle {
              position: absolute;
              width: 12px;
@@ -121,7 +112,7 @@
              pointer-events: auto;
              z-index: 10;
          }
-         .stage-image.selected .resize-handle {
+         .image-container.selected .resize-handle {
              opacity: 1;
          }
          .resize-handle.tl { top: -6px; left: -6px; cursor: nw-resize; }
@@ -215,99 +206,102 @@
              updateStageInfo();
          }
 
-         function selectImage(image) {
-             document.querySelectorAll('.stage-image.selected').forEach((item) => item.classList.remove('selected'));
-             state.selectedImage = image;
-             if (image) image.classList.add('selected');
+         function selectImage(container) {
+             document.querySelectorAll('.image-container.selected').forEach((item) => item.classList.remove('selected'));
+             state.selectedImage = container;
+             if (container) container.classList.add('selected');
          }
 
-         function createResizeHandles(image) {
+         function createResizeHandles(container) {
              const corners = ['tl', 'tr', 'bl', 'br'];
              corners.forEach(corner => {
                  const handle = document.createElement('div');
                  handle.className = `resize-handle ${corner}`;
                  handle.dataset.corner = corner;
-                 image.appendChild(handle);
+                 container.appendChild(handle);
              });
          }
 
          function addMovableImage(src) {
+             const container = document.createElement('div');
+             container.className = 'image-container';
+             
              const image = new Image();
-             image.className = 'stage-image';
-             image.src = src;
              image.draggable = false;
              image.onload = () => {
                  const maxWidth = state.stageWidth * 0.6;
                  const maxHeight = state.stageHeight * 0.6;
                  const scale = Math.min(1, maxWidth / image.naturalWidth, maxHeight / image.naturalHeight);
-                 image.dataset.width = Math.round(image.naturalWidth * scale);
-                 image.dataset.height = Math.round(image.naturalHeight * scale);
-                 image.dataset.aspectRatio = image.naturalWidth / image.naturalHeight;
-                 image.style.width = `${image.dataset.width}px`;
-                 image.style.height = `${image.dataset.height}px`;
-                 image.dataset.x = Math.round((state.stageWidth - Number(image.dataset.width)) / 2);
-                 image.dataset.y = Math.round((state.stageHeight - Number(image.dataset.height)) / 2);
-                 image.style.left = `${image.dataset.x}px`;
-                 image.style.top = `${image.dataset.y}px`;
-                 createResizeHandles(image);
-                 selectImage(image);
+                 container.dataset.width = Math.round(image.naturalWidth * scale);
+                 container.dataset.height = Math.round(image.naturalHeight * scale);
+                 container.dataset.aspectRatio = image.naturalWidth / image.naturalHeight;
+                 container.style.width = `${container.dataset.width}px`;
+                 container.style.height = `${container.dataset.height}px`;
+                 container.dataset.x = Math.round((state.stageWidth - Number(container.dataset.width)) / 2);
+                 container.dataset.y = Math.round((state.stageHeight - Number(container.dataset.height)) / 2);
+                 container.style.left = `${container.dataset.x}px`;
+                 container.style.top = `${container.dataset.y}px`;
+                 createResizeHandles(container);
+                 selectImage(container);
              };
-             image.addEventListener('pointerdown', startImageDrag);
-             stage.appendChild(image);
+             image.src = src;
+             container.appendChild(image);
+             container.addEventListener('pointerdown', startImageDrag);
+             stage.appendChild(container);
          }
 
          function startImageDrag(event) {
              if (event.button !== 0) return;
              
-             const image = event.currentTarget;
+             const container = event.currentTarget;
              const handle = event.target.closest('.resize-handle');
              
              if (handle) {
-                 startImageResize(event, image, handle);
+                 startImageResize(event, container, handle);
                  return;
              }
              
              event.preventDefault();
-             selectImage(image);
-             image.setPointerCapture(event.pointerId);
+             selectImage(container);
+             container.setPointerCapture(event.pointerId);
              const startX = event.clientX;
              const startY = event.clientY;
-             const initialX = Number(image.dataset.x || 0);
-             const initialY = Number(image.dataset.y || 0);
+             const initialX = Number(container.dataset.x || 0);
+             const initialY = Number(container.dataset.y || 0);
 
              function moveImage(moveEvent) {
                  const nextX = initialX + (moveEvent.clientX - startX) / state.zoom;
                  const nextY = initialY + (moveEvent.clientY - startY) / state.zoom;
-                 image.dataset.x = Math.round(nextX);
-                 image.dataset.y = Math.round(nextY);
-                 image.style.left = `${image.dataset.x}px`;
-                 image.style.top = `${image.dataset.y}px`;
+                 container.dataset.x = Math.round(nextX);
+                 container.dataset.y = Math.round(nextY);
+                 container.style.left = `${container.dataset.x}px`;
+                 container.style.top = `${container.dataset.y}px`;
              }
 
              function stopImageDrag() {
-                 image.removeEventListener('pointermove', moveImage);
-                 image.removeEventListener('pointerup', stopImageDrag);
-                 image.removeEventListener('pointercancel', stopImageDrag);
+                 container.removeEventListener('pointermove', moveImage);
+                 container.removeEventListener('pointerup', stopImageDrag);
+                 container.removeEventListener('pointercancel', stopImageDrag);
              }
 
-             image.addEventListener('pointermove', moveImage);
-             image.addEventListener('pointerup', stopImageDrag);
-             image.addEventListener('pointercancel', stopImageDrag);
+             container.addEventListener('pointermove', moveImage);
+             container.addEventListener('pointerup', stopImageDrag);
+             container.addEventListener('pointercancel', stopImageDrag);
          }
 
-         function startImageResize(event, image, handle) {
+         function startImageResize(event, container, handle) {
              event.preventDefault();
              event.stopPropagation();
-             image.setPointerCapture(event.pointerId);
+             container.setPointerCapture(event.pointerId);
              
              const corner = handle.dataset.corner;
              const startX = event.clientX;
              const startY = event.clientY;
-             const initialWidth = Number(image.dataset.width);
-             const initialHeight = Number(image.dataset.height);
-             const initialX = Number(image.dataset.x);
-             const initialY = Number(image.dataset.y);
-             const aspectRatio = Number(image.dataset.aspectRatio);
+             const initialWidth = Number(container.dataset.width);
+             const initialHeight = Number(container.dataset.height);
+             const initialX = Number(container.dataset.x);
+             const initialY = Number(container.dataset.y);
+             const aspectRatio = Number(container.dataset.aspectRatio);
 
              function resizeImage(resizeEvent) {
                  const deltaX = (resizeEvent.clientX - startX) / state.zoom;
@@ -348,26 +342,26 @@
                      }
                  }
 
-                 image.dataset.width = Math.round(newWidth);
-                 image.dataset.height = Math.round(newHeight);
-                 image.dataset.x = Math.round(newX);
-                 image.dataset.y = Math.round(newY);
+                 container.dataset.width = Math.round(newWidth);
+                 container.dataset.height = Math.round(newHeight);
+                 container.dataset.x = Math.round(newX);
+                 container.dataset.y = Math.round(newY);
                  
-                 image.style.width = `${image.dataset.width}px`;
-                 image.style.height = `${image.dataset.height}px`;
-                 image.style.left = `${image.dataset.x}px`;
-                 image.style.top = `${image.dataset.y}px`;
+                 container.style.width = `${container.dataset.width}px`;
+                 container.style.height = `${container.dataset.height}px`;
+                 container.style.left = `${container.dataset.x}px`;
+                 container.style.top = `${container.dataset.y}px`;
              }
 
              function stopImageResize() {
-                 image.removeEventListener('pointermove', resizeImage);
-                 image.removeEventListener('pointerup', stopImageResize);
-                 image.removeEventListener('pointercancel', stopImageResize);
+                 container.removeEventListener('pointermove', resizeImage);
+                 container.removeEventListener('pointerup', stopImageResize);
+                 container.removeEventListener('pointercancel', stopImageResize);
              }
 
-             image.addEventListener('pointermove', resizeImage);
-             image.addEventListener('pointerup', stopImageResize);
-             image.addEventListener('pointercancel', stopImageResize);
+             container.addEventListener('pointermove', resizeImage);
+             container.addEventListener('pointerup', stopImageResize);
+             container.addEventListener('pointercancel', stopImageResize);
          }
 
          function openImporter() { imageInput.click(); }
@@ -401,13 +395,14 @@
              canvas.width = state.stageWidth;
              canvas.height = state.stageHeight;
              const context = canvas.getContext('2d');
-             [...stage.querySelectorAll('.stage-image')].forEach((image) => {
+             [...stage.querySelectorAll('.image-container')].forEach((container) => {
+                 const image = container.querySelector('img');
                  context.drawImage(
                      image,
-                     Number(image.dataset.x || 0),
-                     Number(image.dataset.y || 0),
-                     Number(image.dataset.width || image.naturalWidth),
-                     Number(image.dataset.height || image.naturalHeight)
+                     Number(container.dataset.x || 0),
+                     Number(container.dataset.y || 0),
+                     Number(container.dataset.width || image.naturalWidth),
+                     Number(container.dataset.height || image.naturalHeight)
                  );
              });
              const link = document.createElement('a');
