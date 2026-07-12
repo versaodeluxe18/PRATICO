@@ -1,468 +1,566 @@
-<!DOCTYPE html><html class="light" lang="pt-BR"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-       <script>
-       window.tailwind = window.tailwind || {};
-       window.tailwind.config = {
-         darkMode: "class",
-         theme: {
-           extend: {
-             "colors": {
-                     "tertiary-container": "#001a42",
-                     "surface-tint": "#575e70",
-                     "surface": "#f8f9fb",
-                     "inverse-surface": "#2e3132",
-                     "outline-variant": "#c6c6cd",
-                     "tertiary-fixed": "#d8e2ff",
-                     "on-secondary-container": "#5e6572",
-                     "primary-fixed": "#dce2f7",
-                     "on-tertiary-fixed": "#001a42",
-                     "on-background": "#191c1e",
-                     "on-tertiary": "#ffffff",
-                     "on-primary-fixed": "#141b2b",
-                     "on-secondary": "#ffffff",
-                     "surface-container": "#edeef0",
-                     "primary-container": "#141b2b",
-                     "on-secondary-fixed": "#151c27",
-                     "primary": "#000000",
-                     "secondary": "#585f6c",
-                     "on-secondary-fixed-variant": "#404754",
-                     "on-error": "#ffffff",
-                     "on-primary": "#ffffff",
-                     "surface-variant": "#e1e2e4",
-                     "on-tertiary-fixed-variant": "#004395",
-                     "surface-bright": "#f8f9fb",
-                     "surface-dim": "#d9dadc",
-                     "primary-fixed-dim": "#c0c6db",
-                     "background": "#f8f9fb",
-                     "surface-container-low": "#f3f4f6",
-                     "surface-container-highest": "#e1e2e4",
-                     "inverse-on-surface": "#f0f1f3",
-                     "on-primary-container": "#7d8497",
-                     "on-error-container": "#93000a",
-                     "surface-container-high": "#e7e8ea",
-                     "tertiary": "#000000",
-                     "tertiary-fixed-dim": "#adc6ff",
-                     "on-surface-variant": "#45464c",
-                     "on-tertiary-container": "#3980f4",
-                     "surface-container-lowest": "#ffffff",
-                     "error-container": "#ffdad6",
-                     "outline": "#76777d",
-                     "on-primary-fixed-variant": "#404758",
-                     "error": "#ba1a1a",
-                     "on-surface": "#191c1e",
-                     "secondary-fixed-dim": "#c0c7d6",
-                     "secondary-container": "#dce2f3",
-                     "inverse-primary": "#c0c6db",
-                     "secondary-fixed": "#dce2f3"
-             },
-             "borderRadius": {
-                     "DEFAULT": "0.125rem",
-                     "lg": "0.25rem",
-                     "xl": "0.5rem",
-                     "full": "0.75rem"
-             },
-             "spacing": {
-                     "toolbar-gap": "8px",
-                     "canvas-margin": "40px",
-                     "icon-touch-target": "32px",
-                     "panel-padding": "12px"
-             },
-             "fontFamily": {
-                     "ui-body": ["Inter"],
-                     "ui-label-sm": ["Inter"],
-                     "mono-data": ["monospace"],
-                     "ui-header": ["Inter"]
-             },
-             "fontSize": {
-                     "ui-body": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
-                     "ui-label-sm": ["11px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
-                     "mono-data": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
-                     "ui-header": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
-             }
-           },
-         },
-       }
-     </script><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script></head><body class="bg-background text-on-background font-ui-body text-ui-body overflow-hidden">
-     <style>
-         html, body { height: 100%; }
-         .canvas-area { min-height: 100vh; background-color: #ffffff; cursor: default; }
-         .canvas-area.panning { cursor: grabbing; }
-         .checkerboard {
-             background-image:
-                 linear-gradient(45deg, #d9dadc 25%, transparent 25%),
-                 linear-gradient(-45deg, #d9dadc 25%, transparent 25%),
-                 linear-gradient(45deg, transparent 75%, #d9dadc 75%),
-                 linear-gradient(-45deg, transparent 75%, #d9dadc 75%);
-             background-size: 24px 24px;
-             background-position: 0 0, 0 12px, 12px -12px, -12px 0;
-         }
-         #stage-wrapper { transform-origin: center center; }
-         #stage { background-color: transparent; touch-action: none; }
-         .image-container { position: absolute; max-width: none; user-select: none; cursor: move; touch-action: none; }
-         .image-container.selected { outline: 2px solid #000; outline-offset: 2px; }
-         .image-container img { display: block; width: 100%; height: 100%; }
-         .resize-handle {
-             position: absolute;
-             width: 12px;
-             height: 12px;
-             background-color: #000;
-             border: 2px solid #fff;
-             box-sizing: border-box;
-             opacity: 0;
-             transition: opacity 0.2s;
-             pointer-events: auto;
-             z-index: 10;
-         }
-         .image-container.selected .resize-handle {
-             opacity: 1;
-         }
-         .resize-handle.tl { top: -6px; left: -6px; cursor: nw-resize; }
-         .resize-handle.tr { top: -6px; right: -6px; cursor: ne-resize; }
-         .resize-handle.bl { bottom: -6px; left: -6px; cursor: sw-resize; }
-         .resize-handle.br { bottom: -6px; right: -6px; cursor: se-resize; }
-         .tool-label { font-size: 11px; font-weight: 600; }
-     </style>
+<!DOCTYPE html><html class="light" lang="pt-BR"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+        <script>
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-container": "#001a42",
+                      "surface-tint": "#575e70",
+                      "surface": "#f8f9fb",
+                      "inverse-surface": "#2e3132",
+                      "outline-variant": "#c6c6cd",
+                      "tertiary-fixed": "#d8e2ff",
+                      "on-secondary-container": "#5e6572",
+                      "primary-fixed": "#dce2f7",
+                      "on-tertiary-fixed": "#001a42",
+                      "on-background": "#191c1e",
+                      "on-tertiary": "#ffffff",
+                      "on-primary-fixed": "#141b2b",
+                      "on-secondary": "#ffffff",
+                      "surface-container": "#edeef0",
+                      "primary-container": "#141b2b",
+                      "on-secondary-fixed": "#151c27",
+                      "primary": "#000000",
+                      "secondary": "#585f6c",
+                      "on-secondary-fixed-variant": "#404754",
+                      "on-error": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "surface-variant": "#e1e2e4",
+                      "on-tertiary-fixed-variant": "#004395",
+                      "surface-bright": "#f8f9fb",
+                      "surface-dim": "#d9dadc",
+                      "primary-fixed-dim": "#c0c6db",
+                      "background": "#f8f9fb",
+                      "surface-container-low": "#f3f4f6",
+                      "surface-container-highest": "#e1e2e4",
+                      "inverse-on-surface": "#f0f1f3",
+                      "on-primary-container": "#7d8497",
+                      "on-error-container": "#93000a",
+                      "surface-container-high": "#e7e8ea",
+                      "tertiary": "#000000",
+                      "tertiary-fixed-dim": "#adc6ff",
+                      "on-surface-variant": "#45464c",
+                      "on-tertiary-container": "#3980f4",
+                      "surface-container-lowest": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "outline": "#76777d",
+                      "on-primary-fixed-variant": "#404758",
+                      "error": "#ba1a1a",
+                      "on-surface": "#191c1e",
+                      "secondary-fixed-dim": "#c0c7d6",
+                      "secondary-container": "#dce2f3",
+                      "inverse-primary": "#c0c6db",
+                      "secondary-fixed": "#dce2f3"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "toolbar-gap": "8px",
+                      "canvas-margin": "40px",
+                      "icon-touch-target": "32px",
+                      "panel-padding": "12px"
+              },
+              "fontFamily": {
+                      "ui-body": ["Inter"],
+                      "ui-label-sm": ["Inter"],
+                      "mono-data": ["monospace"],
+                      "ui-header": ["Inter"]
+              },
+              "fontSize": {
+                      "ui-body": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                      "ui-label-sm": ["11px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                      "mono-data": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                      "ui-header": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+      </script><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script></head><body class="bg-background text-on-background font-ui-body text-ui-body overflow-hidden">
+      <style>
+          html, body { height: 100%; }
+          .canvas-area { min-height: 100vh; background-color: #ffffff; cursor: default; }
+          .canvas-area.panning { cursor: grabbing; }
+          .checkerboard {
+              background-image:
+                  linear-gradient(45deg, #d9dadc 25%, transparent 25%),
+                  linear-gradient(-45deg, #d9dadc 25%, transparent 25%),
+                  linear-gradient(45deg, transparent 75%, #d9dadc 75%),
+                  linear-gradient(-45deg, transparent 75%, #d9dadc 75%);
+              background-size: 24px 24px;
+              background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+          }
+          #stage-wrapper { transform-origin: center center; }
+          #stage { background-color: transparent; touch-action: none; }
+          .image-container { position: absolute; max-width: none; user-select: none; cursor: move; touch-action: none; }
+          .image-container.selected { outline: 2px solid #000; outline-offset: 2px; }
+          .image-container img { display: block; width: 100%; height: 100%; }
+          .resize-handle {
+              position: absolute;
+              width: 12px;
+              height: 12px;
+              background-color: #000;
+              border: 2px solid #fff;
+              box-sizing: border-box;
+              opacity: 0;
+              transition: opacity 0.2s;
+              pointer-events: auto;
+              z-index: 10;
+          }
+          .image-container.selected .resize-handle {
+              opacity: 1;
+          }
+          .resize-handle.tl { top: -6px; left: -6px; cursor: nw-resize; }
+          .resize-handle.tr { top: -6px; right: -6px; cursor: ne-resize; }
+          .resize-handle.bl { bottom: -6px; left: -6px; cursor: sw-resize; }
+          .resize-handle.br { bottom: -6px; right: -6px; cursor: se-resize; }
+          .tool-label { font-size: 11px; font-weight: 600; }
+          
+          /* Toolbar styles */
+          #toolbar-drag-handle { cursor: grab; user-select: none; }
+          #toolbar-drag-handle.dragging { cursor: grabbing; }
+          
+          /* Dropdown menu styles */
+          .toolbar-dropdown {
+              position: absolute;
+              bottom: 100%;
+              background: #f8f9fb;
+              border: 1px solid #c6c6cd;
+              border-radius: 8px;
+              shadow: 0 2px 8px rgba(0,0,0,0.1);
+              display: none;
+              flex-direction: column;
+              z-index: 100;
+              min-width: 160px;
+          }
+          .toolbar-dropdown.show {
+              display: flex;
+          }
+          .toolbar-dropdown-item {
+              padding: 8px 12px;
+              cursor: pointer;
+              border: none;
+              background: transparent;
+              width: 100%;
+              text-align: left;
+              font-size: 13px;
+              color: #191c1e;
+              transition: background-color 0.2s;
+          }
+          .toolbar-dropdown-item:hover {
+              background-color: #edeef0;
+          }
+          .toolbar-dropdown-item:first-child {
+              border-radius: 8px 8px 0 0;
+          }
+          .toolbar-dropdown-item:last-child {
+              border-radius: 0 0 8px 8px;
+          }
+          
+          /* Icon button styles */
+          .icon-button {
+              padding: 8px;
+              border-radius: 8px;
+              background: transparent;
+              border: none;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: #45464c;
+              transition: background-color 0.2s;
+              position: relative;
+          }
+          .icon-button:hover {
+              background-color: #edeef0;
+          }
+          .icon-button.active {
+              background-color: #dce2f3;
+              color: #000;
+          }
+      </style>
 
-     <main class="canvas-area relative flex flex-col items-center justify-center gap-4" id="workspace">
-         <div class="fixed top-4 left-1/2 -translate-x-1/2 z-40 rounded-full bg-surface/95 border border-outline-variant px-4 py-2 shadow text-on-surface-variant">
-             <span id="stage-info">Palco: 1080 × 1080 px · Zoom: 50%</span>
-         </div>
+      <main class="canvas-area relative flex flex-col items-center justify-center gap-4" id="workspace">
+          <div class="fixed top-4 left-1/2 -translate-x-1/2 z-40 rounded-full bg-surface/95 border border-outline-variant px-4 py-2 shadow text-on-surface-variant">
+              <span id="stage-info">Palco: 1080 × 1080 px · Zoom: 50%</span>
+          </div>
 
-         <div id="stage-wrapper" class="relative shadow-2xl border border-outline-variant" style="transform: translate(0px, 0px) scale(0.5);">
-             <div id="stage" class="relative overflow-hidden checkerboard" style="width: 1080px; height: 1080px;"></div>
-         </div>
+          <div id="stage-wrapper" class="relative shadow-2xl border border-outline-variant" style="transform: translate(0px, 0px) scale(0.5);">
+              <div id="stage" class="relative overflow-hidden checkerboard" style="width: 1080px; height: 1080px;"></div>
+          </div>
 
-         <button id="quick-import" class="fixed bottom-24 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-90 hover:shadow-xl" title="Importar imagem">
-             <span class="material-symbols-outlined text-2xl" data-icon="add">add</span>
-         </button>
-     </main>
+          <button id="quick-import" class="fixed bottom-24 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-90 hover:scale-105">
+              <span class="material-symbols-outlined text-2xl" data-icon="add">add</span>
+          </button>
+      </main>
 
-     <input id="image-input" class="hidden" type="file" accept="image/*">
+      <input id="image-input" class="hidden" type="file" accept="image/*">
 
-     <div class="fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-toolbar-gap px-4 py-2 z-50 bg-surface/70 backdrop-blur-xl backdrop-saturate-150 rounded-full shadow-lg border border-outline-variant" id="floating-toolbar">
-         <div class="text-outline mr-2" id="toolbar-drag-handle" title="Arrastar barra">
-             <span class="material-symbols-outlined text-sm">drag_indicator</span>
-         </div>
-         <div class="flex items-center gap-1">
-             <button id="import-image" class="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-surface-container transition-all active:scale-95 text-on-surface-variant font-ui-label-sm text-ui-label-sm" title="Importar imagem">
-                 <span class="material-symbols-outlined text-[20px]" data-icon="photo">photo</span><span class="tool-label">Imagem</span>
-             </button>
-             <div class="w-px h-6 bg-outline-variant mx-1"></div>
-             <label class="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-surface-container transition-all text-on-surface-variant font-ui-label-sm text-ui-label-sm" title="Escolher tamanho do palco">
-                 <span class="material-symbols-outlined text-[20px]" data-icon="aspect_ratio">aspect_ratio</span>
-                 <select id="stage-size" class="border-0 bg-transparent p-0 pr-7 text-ui-label-sm focus:ring-0 cursor-pointer">
-                     <option value="1080x1080">1080 × 1080</option>
-                     <option value="1920x1080">1920 × 1080</option>
-                     <option value="1080x1920">1080 × 1920</option>
-                     <option value="1200x1200">1200 × 1200</option>
-                     <option value="custom">Personalizado</option>
-                 </select>
-             </label>
-             <div class="w-px h-6 bg-outline-variant mx-1"></div>
-             <div class="flex items-center gap-2 px-3 py-2 rounded-full text-on-surface-variant">
-                 <span class="material-symbols-outlined text-[20px]" data-icon="zoom_in">zoom_in</span>
-                 <input id="zoom-control" class="w-28 accent-black" type="range" min="10" max="150" value="50">
-             </div>
-             <div class="w-px h-6 bg-outline-variant mx-1"></div>
-             <button id="save-png" class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-secondary-container hover:bg-secondary-fixed text-on-secondary-container font-ui-label-sm text-ui-label-sm transition-all active:scale-95" title="Baixar como PNG">
-                 <span class="material-symbols-outlined text-[18px]" data-icon="download">download</span><span class="tool-label">PNG</span>
-             </button>
-         </div>
-     </div>
+      <div class="fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-toolbar-gap px-3 py-2 z-50 bg-surface/70 backdrop-blur-xl backdrop-saturate-150 rounded-full shadow-lg border border-outline-variant" id="floating-toolbar">
+          <div class="text-outline mr-2 cursor-grab active:cursor-grabbing select-none" id="toolbar-drag-handle" title="Arrastar barra">
+              <span class="material-symbols-outlined text-sm">drag_indicator</span>
+          </div>
+          
+          <button id="import-image-btn" class="icon-button" title="Importar imagem">
+              <span class="material-symbols-outlined text-[20px]">photo</span>
+          </button>
+          
+          <div class="w-px h-6 bg-outline-variant mx-1"></div>
+          
+          <div class="relative">
+              <button id="stage-size-btn" class="icon-button" title="Tamanho do palco">
+                  <span class="material-symbols-outlined text-[20px]">aspect_ratio</span>
+              </button>
+              <div class="toolbar-dropdown" id="stage-size-dropdown">
+                  <button class="toolbar-dropdown-item" data-size="1080x1080">Quadrado (1080 × 1080)</button>
+                  <button class="toolbar-dropdown-item" data-size="1920x1080">Web (1920 × 1080)</button>
+                  <button class="toolbar-dropdown-item" data-size="1080x1920">Vertical (1080 × 1920)</button>
+                  <button class="toolbar-dropdown-item" data-size="1200x1200">Instagram (1200 × 1200)</button>
+                  <button class="toolbar-dropdown-item" data-size="custom">Personalizado</button>
+              </div>
+          </div>
+          
+          <div class="w-px h-6 bg-outline-variant mx-1"></div>
+          
+          <div class="flex items-center gap-2 px-2 py-2 text-on-surface-variant">
+              <span class="material-symbols-outlined text-[20px]">zoom_in</span>
+              <input id="zoom-control" class="w-28 accent-black" type="range" min="10" max="150" value="50">
+          </div>
+          
+          <div class="w-px h-6 bg-outline-variant mx-1"></div>
+          
+          <button id="save-png" class="icon-button bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed" title="Salvar como PNG">
+              <span class="material-symbols-outlined text-[18px]">download</span>
+          </button>
+      </div>
 
-     <script>
-         const workspace = document.getElementById('workspace');
-         const toolbar = document.getElementById('floating-toolbar');
-         const stage = document.getElementById('stage');
-         const stageWrapper = document.getElementById('stage-wrapper');
-         const stageInfo = document.getElementById('stage-info');
-         const imageInput = document.getElementById('image-input');
-         const importImageButton = document.getElementById('import-image');
-         const quickImportButton = document.getElementById('quick-import');
-         const stageSizeSelect = document.getElementById('stage-size');
-         const zoomControl = document.getElementById('zoom-control');
-         const savePngButton = document.getElementById('save-png');
+      <script>
+          const workspace = document.getElementById('workspace');
+          const toolbar = document.getElementById('floating-toolbar');
+          const stage = document.getElementById('stage');
+          const stageWrapper = document.getElementById('stage-wrapper');
+          const stageInfo = document.getElementById('stage-info');
+          const imageInput = document.getElementById('image-input');
+          const importImageBtn = document.getElementById('import-image-btn');
+          const quickImportButton = document.getElementById('quick-import');
+          const stageSizeBtn = document.getElementById('stage-size-btn');
+          const stageSizeDropdown = document.getElementById('stage-size-dropdown');
+          const zoomControl = document.getElementById('zoom-control');
+          const savePngButton = document.getElementById('save-png');
+          const dragHandle = document.getElementById('toolbar-drag-handle');
 
-         const state = { stageWidth: 1080, stageHeight: 1080, zoom: 0.5, stageOffsetX: 0, stageOffsetY: 0, selectedImage: null };
+          const state = { stageWidth: 1080, stageHeight: 1080, zoom: 0.5, stageOffsetX: 0, stageOffsetY: 0, selectedImage: null };
 
-         function updateStageTransform() {
-             stageWrapper.style.transform = `translate(${state.stageOffsetX}px, ${state.stageOffsetY}px) scale(${state.zoom})`;
-         }
+          function updateStageTransform() {
+              stageWrapper.style.transform = `translate(${state.stageOffsetX}px, ${state.stageOffsetY}px) scale(${state.zoom})`;
+          }
 
-         function updateStageInfo() {
-             stageInfo.textContent = `Palco: ${state.stageWidth} × ${state.stageHeight} px · Zoom: ${Math.round(state.zoom * 100)}%`;
-         }
+          function updateStageInfo() {
+              stageInfo.textContent = `Palco: ${state.stageWidth} × ${state.stageHeight} px · Zoom: ${Math.round(state.zoom * 100)}%`;
+          }
 
-         function setStageSize(width, height) {
-             state.stageWidth = width;
-             state.stageHeight = height;
-             stage.style.width = `${width}px`;
-             stage.style.height = `${height}px`;
-             updateStageInfo();
-         }
+          function setStageSize(width, height) {
+              state.stageWidth = width;
+              state.stageHeight = height;
+              stage.style.width = `${width}px`;
+              stage.style.height = `${height}px`;
+              updateStageInfo();
+          }
 
-         function setZoom(percent) {
-             state.zoom = Number(percent) / 100;
-             updateStageTransform();
-             updateStageInfo();
-         }
+          function setZoom(percent) {
+              state.zoom = Number(percent) / 100;
+              updateStageTransform();
+              updateStageInfo();
+          }
 
-         function selectImage(container) {
-             document.querySelectorAll('.image-container.selected').forEach((item) => item.classList.remove('selected'));
-             state.selectedImage = container;
-             if (container) container.classList.add('selected');
-         }
+          function selectImage(container) {
+              document.querySelectorAll('.image-container.selected').forEach((item) => item.classList.remove('selected'));
+              state.selectedImage = container;
+              if (container) container.classList.add('selected');
+          }
 
-         function createResizeHandles(container) {
-             const corners = ['tl', 'tr', 'bl', 'br'];
-             corners.forEach(corner => {
-                 const handle = document.createElement('div');
-                 handle.className = `resize-handle ${corner}`;
-                 handle.dataset.corner = corner;
-                 container.appendChild(handle);
-             });
-         }
+          function createResizeHandles(container) {
+              const corners = ['tl', 'tr', 'bl', 'br'];
+              corners.forEach(corner => {
+                  const handle = document.createElement('div');
+                  handle.className = `resize-handle ${corner}`;
+                  handle.dataset.corner = corner;
+                  container.appendChild(handle);
+              });
+          }
 
-         function addMovableImage(src) {
-             const container = document.createElement('div');
-             container.className = 'image-container';
-             
-             const image = new Image();
-             image.draggable = false;
-             image.onload = () => {
-                 const maxWidth = state.stageWidth * 0.6;
-                 const maxHeight = state.stageHeight * 0.6;
-                 const scale = Math.min(1, maxWidth / image.naturalWidth, maxHeight / image.naturalHeight);
-                 container.dataset.width = Math.round(image.naturalWidth * scale);
-                 container.dataset.height = Math.round(image.naturalHeight * scale);
-                 container.dataset.aspectRatio = image.naturalWidth / image.naturalHeight;
-                 container.style.width = `${container.dataset.width}px`;
-                 container.style.height = `${container.dataset.height}px`;
-                 container.dataset.x = Math.round((state.stageWidth - Number(container.dataset.width)) / 2);
-                 container.dataset.y = Math.round((state.stageHeight - Number(container.dataset.height)) / 2);
-                 container.style.left = `${container.dataset.x}px`;
-                 container.style.top = `${container.dataset.y}px`;
-                 createResizeHandles(container);
-                 selectImage(container);
-             };
-             image.src = src;
-             container.appendChild(image);
-             container.addEventListener('pointerdown', startImageDrag);
-             stage.appendChild(container);
-         }
+          function addMovableImage(src) {
+              const container = document.createElement('div');
+              container.className = 'image-container';
+              
+              const image = new Image();
+              image.draggable = false;
+              image.onload = () => {
+                  const maxWidth = state.stageWidth * 0.6;
+                  const maxHeight = state.stageHeight * 0.6;
+                  const scale = Math.min(1, maxWidth / image.naturalWidth, maxHeight / image.naturalHeight);
+                  container.dataset.width = Math.round(image.naturalWidth * scale);
+                  container.dataset.height = Math.round(image.naturalHeight * scale);
+                  container.dataset.aspectRatio = image.naturalWidth / image.naturalHeight;
+                  container.style.width = `${container.dataset.width}px`;
+                  container.style.height = `${container.dataset.height}px`;
+                  container.dataset.x = Math.round((state.stageWidth - Number(container.dataset.width)) / 2);
+                  container.dataset.y = Math.round((state.stageHeight - Number(container.dataset.height)) / 2);
+                  container.style.left = `${container.dataset.x}px`;
+                  container.style.top = `${container.dataset.y}px`;
+                  createResizeHandles(container);
+                  selectImage(container);
+              };
+              image.src = src;
+              container.appendChild(image);
+              container.addEventListener('pointerdown', startImageDrag);
+              stage.appendChild(container);
+          }
 
-         function startImageDrag(event) {
-             if (event.button !== 0) return;
-             
-             const container = event.currentTarget;
-             const handle = event.target.closest('.resize-handle');
-             
-             if (handle) {
-                 startImageResize(event, container, handle);
-                 return;
-             }
-             
-             event.preventDefault();
-             selectImage(container);
-             container.setPointerCapture(event.pointerId);
-             const startX = event.clientX;
-             const startY = event.clientY;
-             const initialX = Number(container.dataset.x || 0);
-             const initialY = Number(container.dataset.y || 0);
+          function startImageDrag(event) {
+              if (event.button !== 0) return;
+              
+              const container = event.currentTarget;
+              const handle = event.target.closest('.resize-handle');
+              
+              if (handle) {
+                  startImageResize(event, container, handle);
+                  return;
+              }
+              
+              event.preventDefault();
+              selectImage(container);
+              container.setPointerCapture(event.pointerId);
+              const startX = event.clientX;
+              const startY = event.clientY;
+              const initialX = Number(container.dataset.x || 0);
+              const initialY = Number(container.dataset.y || 0);
 
-             function moveImage(moveEvent) {
-                 const nextX = initialX + (moveEvent.clientX - startX) / state.zoom;
-                 const nextY = initialY + (moveEvent.clientY - startY) / state.zoom;
-                 container.dataset.x = Math.round(nextX);
-                 container.dataset.y = Math.round(nextY);
-                 container.style.left = `${container.dataset.x}px`;
-                 container.style.top = `${container.dataset.y}px`;
-             }
+              function moveImage(moveEvent) {
+                  const nextX = initialX + (moveEvent.clientX - startX) / state.zoom;
+                  const nextY = initialY + (moveEvent.clientY - startY) / state.zoom;
+                  container.dataset.x = Math.round(nextX);
+                  container.dataset.y = Math.round(nextY);
+                  container.style.left = `${container.dataset.x}px`;
+                  container.style.top = `${container.dataset.y}px`;
+              }
 
-             function stopImageDrag() {
-                 container.removeEventListener('pointermove', moveImage);
-                 container.removeEventListener('pointerup', stopImageDrag);
-                 container.removeEventListener('pointercancel', stopImageDrag);
-             }
+              function stopImageDrag() {
+                  container.removeEventListener('pointermove', moveImage);
+                  container.removeEventListener('pointerup', stopImageDrag);
+                  container.removeEventListener('pointercancel', stopImageDrag);
+              }
 
-             container.addEventListener('pointermove', moveImage);
-             container.addEventListener('pointerup', stopImageDrag);
-             container.addEventListener('pointercancel', stopImageDrag);
-         }
+              container.addEventListener('pointermove', moveImage);
+              container.addEventListener('pointerup', stopImageDrag);
+              container.addEventListener('pointercancel', stopImageDrag);
+          }
 
-         function startImageResize(event, container, handle) {
-             event.preventDefault();
-             event.stopPropagation();
-             container.setPointerCapture(event.pointerId);
-             
-             const corner = handle.dataset.corner;
-             const startX = event.clientX;
-             const startY = event.clientY;
-             const initialWidth = Number(container.dataset.width);
-             const initialHeight = Number(container.dataset.height);
-             const initialX = Number(container.dataset.x);
-             const initialY = Number(container.dataset.y);
-             const aspectRatio = Number(container.dataset.aspectRatio);
+          function startImageResize(event, container, handle) {
+              event.preventDefault();
+              event.stopPropagation();
+              container.setPointerCapture(event.pointerId);
+              
+              const corner = handle.dataset.corner;
+              const startX = event.clientX;
+              const startY = event.clientY;
+              const initialWidth = Number(container.dataset.width);
+              const initialHeight = Number(container.dataset.height);
+              const initialX = Number(container.dataset.x);
+              const initialY = Number(container.dataset.y);
+              const aspectRatio = Number(container.dataset.aspectRatio);
 
-             function resizeImage(resizeEvent) {
-                 const deltaX = (resizeEvent.clientX - startX) / state.zoom;
-                 const deltaY = (resizeEvent.clientY - startY) / state.zoom;
-                 const maintainAspect = resizeEvent.shiftKey;
+              function resizeImage(resizeEvent) {
+                  const deltaX = (resizeEvent.clientX - startX) / state.zoom;
+                  const deltaY = (resizeEvent.clientY - startY) / state.zoom;
+                  const maintainAspect = resizeEvent.shiftKey;
 
-                 let newWidth = initialWidth;
-                 let newHeight = initialHeight;
-                 let newX = initialX;
-                 let newY = initialY;
+                  let newWidth = initialWidth;
+                  let newHeight = initialHeight;
+                  let newX = initialX;
+                  let newY = initialY;
 
-                 if (corner.includes('r')) {
-                     newWidth = Math.max(50, initialWidth + deltaX);
-                 } else if (corner.includes('l')) {
-                     newWidth = Math.max(50, initialWidth - deltaX);
-                     newX = initialX + (initialWidth - newWidth);
-                 }
+                  if (corner.includes('r')) {
+                      newWidth = Math.max(50, initialWidth + deltaX);
+                  } else if (corner.includes('l')) {
+                      newWidth = Math.max(50, initialWidth - deltaX);
+                      newX = initialX + (initialWidth - newWidth);
+                  }
 
-                 if (corner.includes('b')) {
-                     newHeight = Math.max(50, initialHeight + deltaY);
-                 } else if (corner.includes('t')) {
-                     newHeight = Math.max(50, initialHeight - deltaY);
-                     newY = initialY + (initialHeight - newHeight);
-                 }
+                  if (corner.includes('b')) {
+                      newHeight = Math.max(50, initialHeight + deltaY);
+                  } else if (corner.includes('t')) {
+                      newHeight = Math.max(50, initialHeight - deltaY);
+                      newY = initialY + (initialHeight - newHeight);
+                  }
 
-                 if (maintainAspect) {
-                     if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                         newHeight = Math.round(newWidth / aspectRatio);
-                     } else {
-                         newWidth = Math.round(newHeight * aspectRatio);
-                     }
+                  if (maintainAspect) {
+                      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                          newHeight = Math.round(newWidth / aspectRatio);
+                      } else {
+                          newWidth = Math.round(newHeight * aspectRatio);
+                      }
 
-                     if (corner.includes('t')) {
-                         newY = initialY + (initialHeight - newHeight);
-                     }
-                     if (corner.includes('l')) {
-                         newX = initialX + (initialWidth - newWidth);
-                     }
-                 }
+                      if (corner.includes('t')) {
+                          newY = initialY + (initialHeight - newHeight);
+                      }
+                      if (corner.includes('l')) {
+                          newX = initialX + (initialWidth - newWidth);
+                      }
+                  }
 
-                 container.dataset.width = Math.round(newWidth);
-                 container.dataset.height = Math.round(newHeight);
-                 container.dataset.x = Math.round(newX);
-                 container.dataset.y = Math.round(newY);
-                 
-                 container.style.width = `${container.dataset.width}px`;
-                 container.style.height = `${container.dataset.height}px`;
-                 container.style.left = `${container.dataset.x}px`;
-                 container.style.top = `${container.dataset.y}px`;
-             }
+                  container.dataset.width = Math.round(newWidth);
+                  container.dataset.height = Math.round(newHeight);
+                  container.dataset.x = Math.round(newX);
+                  container.dataset.y = Math.round(newY);
+                  
+                  container.style.width = `${container.dataset.width}px`;
+                  container.style.height = `${container.dataset.height}px`;
+                  container.style.left = `${container.dataset.x}px`;
+                  container.style.top = `${container.dataset.y}px`;
+              }
 
-             function stopImageResize() {
-                 container.removeEventListener('pointermove', resizeImage);
-                 container.removeEventListener('pointerup', stopImageResize);
-                 container.removeEventListener('pointercancel', stopImageResize);
-             }
+              function stopImageResize() {
+                  container.removeEventListener('pointermove', resizeImage);
+                  container.removeEventListener('pointerup', stopImageResize);
+                  container.removeEventListener('pointercancel', stopImageResize);
+              }
 
-             container.addEventListener('pointermove', resizeImage);
-             container.addEventListener('pointerup', stopImageResize);
-             container.addEventListener('pointercancel', stopImageResize);
-         }
+              container.addEventListener('pointermove', resizeImage);
+              container.addEventListener('pointerup', stopImageResize);
+              container.addEventListener('pointercancel', stopImageResize);
+          }
 
-         function openImporter() { imageInput.click(); }
+          function openImporter() { imageInput.click(); }
 
-         imageInput.addEventListener('change', (event) => {
-             const file = event.target.files[0];
-             if (!file) return;
-             const reader = new FileReader();
-             reader.onload = () => addMovableImage(reader.result);
-             reader.readAsDataURL(file);
-             imageInput.value = '';
-         });
+          imageInput.addEventListener('change', (event) => {
+              const file = event.target.files[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => addMovableImage(reader.result);
+              reader.readAsDataURL(file);
+              imageInput.value = '';
+          });
 
-         stageSizeSelect.addEventListener('change', () => {
-             if (stageSizeSelect.value === 'custom') {
-                 const width = Number(prompt('Largura do palco em pixels:', state.stageWidth));
-                 const height = Number(prompt('Altura do palco em pixels:', state.stageHeight));
-                 if (width > 0 && height > 0) setStageSize(Math.round(width), Math.round(height));
-                 return;
-             }
-             const [width, height] = stageSizeSelect.value.split('x').map(Number);
-             setStageSize(width, height);
-         });
+          // Stage size dropdown
+          stageSizeBtn.addEventListener('click', () => {
+              stageSizeDropdown.classList.toggle('show');
+              stageSizeBtn.classList.toggle('active');
+          });
 
-         zoomControl.addEventListener('input', (event) => setZoom(event.target.value));
-         importImageButton.addEventListener('click', openImporter);
-         quickImportButton.addEventListener('click', openImporter);
+          document.addEventListener('click', (event) => {
+              if (!toolbar.contains(event.target)) {
+                  stageSizeDropdown.classList.remove('show');
+                  stageSizeBtn.classList.remove('active');
+              }
+          });
 
-         savePngButton.addEventListener('click', () => {
-             const canvas = document.createElement('canvas');
-             canvas.width = state.stageWidth;
-             canvas.height = state.stageHeight;
-             const context = canvas.getContext('2d');
-             [...stage.querySelectorAll('.image-container')].forEach((container) => {
-                 const image = container.querySelector('img');
-                 context.drawImage(
-                     image,
-                     Number(container.dataset.x || 0),
-                     Number(container.dataset.y || 0),
-                     Number(container.dataset.width || image.naturalWidth),
-                     Number(container.dataset.height || image.naturalHeight)
-                 );
-             });
-             const link = document.createElement('a');
-             link.download = `palco-${state.stageWidth}x${state.stageHeight}.png`;
-             link.href = canvas.toDataURL('image/png');
-             link.click();
-         });
+          document.querySelectorAll('.toolbar-dropdown-item').forEach(item => {
+              item.addEventListener('click', (event) => {
+                  const size = event.target.dataset.size;
+                  if (size === 'custom') {
+                      const width = Number(prompt('Largura do palco em pixels:', state.stageWidth));
+                      const height = Number(prompt('Altura do palco em pixels:', state.stageHeight));
+                      if (width > 0 && height > 0) setStageSize(Math.round(width), Math.round(height));
+                  } else {
+                      const [width, height] = size.split('x').map(Number);
+                      setStageSize(width, height);
+                  }
+                  stageSizeDropdown.classList.remove('show');
+                  stageSizeBtn.classList.remove('active');
+              });
+          });
 
-         stage.addEventListener('pointerdown', (event) => {
-             if (event.target === stage && event.button === 0) selectImage(null);
-         });
+          zoomControl.addEventListener('input', (event) => setZoom(event.target.value));
+          importImageBtn.addEventListener('click', openImporter);
+          quickImportButton.addEventListener('click', openImporter);
 
-         workspace.addEventListener('contextmenu', (event) => event.preventDefault());
+          savePngButton.addEventListener('click', () => {
+              const canvas = document.createElement('canvas');
+              canvas.width = state.stageWidth;
+              canvas.height = state.stageHeight;
+              const context = canvas.getContext('2d');
+              [...stage.querySelectorAll('.image-container')].forEach((container) => {
+                  const image = container.querySelector('img');
+                  context.drawImage(
+                      image,
+                      Number(container.dataset.x || 0),
+                      Number(container.dataset.y || 0),
+                      Number(container.dataset.width || image.naturalWidth),
+                      Number(container.dataset.height || image.naturalHeight)
+                  );
+              });
+              const link = document.createElement('a');
+              link.download = `palco-${state.stageWidth}x${state.stageHeight}.png`;
+              link.href = canvas.toDataURL('image/png');
+              link.click();
+          });
 
-         workspace.addEventListener('pointerdown', (event) => {
-             if (event.button !== 2) return;
-             event.preventDefault();
-             workspace.classList.add('panning');
-             workspace.setPointerCapture(event.pointerId);
-             const startX = event.clientX;
-             const startY = event.clientY;
-             const initialOffsetX = state.stageOffsetX;
-             const initialOffsetY = state.stageOffsetY;
+          stage.addEventListener('pointerdown', (event) => {
+              if (event.target === stage && event.button === 0) selectImage(null);
+          });
 
-             function panStage(moveEvent) {
-                 state.stageOffsetX = initialOffsetX + moveEvent.clientX - startX;
-                 state.stageOffsetY = initialOffsetY + moveEvent.clientY - startY;
-                 updateStageTransform();
-             }
+          workspace.addEventListener('contextmenu', (event) => event.preventDefault());
 
-             function stopPanning() {
-                 workspace.classList.remove('panning');
-                 workspace.removeEventListener('pointermove', panStage);
-                 workspace.removeEventListener('pointerup', stopPanning);
-                 workspace.removeEventListener('pointercancel', stopPanning);
-             }
+          workspace.addEventListener('pointerdown', (event) => {
+              if (event.button !== 2) return;
+              event.preventDefault();
+              workspace.classList.add('panning');
+              workspace.setPointerCapture(event.pointerId);
+              const startX = event.clientX;
+              const startY = event.clientY;
+              const initialOffsetX = state.stageOffsetX;
+              const initialOffsetY = state.stageOffsetY;
 
-             workspace.addEventListener('pointermove', panStage);
-             workspace.addEventListener('pointerup', stopPanning);
-             workspace.addEventListener('pointercancel', stopPanning);
-         });
+              function panStage(moveEvent) {
+                  state.stageOffsetX = initialOffsetX + moveEvent.clientX - startX;
+                  state.stageOffsetY = initialOffsetY + moveEvent.clientY - startY;
+                  updateStageTransform();
+              }
 
-         let isDraggingToolbar = false;
-         let offsetX, offsetY;
-         toolbar.addEventListener('mousedown', (event) => {
-             if (['BUTTON', 'SELECT', 'INPUT', 'OPTION'].includes(event.target.tagName)) return;
-             isDraggingToolbar = true;
-             offsetX = event.clientX - toolbar.getBoundingClientRect().left;
-             offsetY = event.clientY - toolbar.getBoundingClientRect().top;
-             toolbar.style.transition = 'none';
-         });
-         document.addEventListener('mousemove', (event) => {
-             if (!isDraggingToolbar) return;
-             toolbar.style.left = `${event.clientX - offsetX}px`;
-             toolbar.style.top = `${event.clientY - offsetY}px`;
-             toolbar.style.bottom = 'auto';
-             toolbar.style.transform = 'none';
-         });
-         document.addEventListener('mouseup', () => { isDraggingToolbar = false; });
-         updateStageTransform();
-         updateStageInfo();
-     </script>
- </body></html>
+              function stopPanning() {
+                  workspace.classList.remove('panning');
+                  workspace.removeEventListener('pointermove', panStage);
+                  workspace.removeEventListener('pointerup', stopPanning);
+                  workspace.removeEventListener('pointercancel', stopPanning);
+              }
+
+              workspace.addEventListener('pointermove', panStage);
+              workspace.addEventListener('pointerup', stopPanning);
+              workspace.addEventListener('pointercancel', stopPanning);
+          });
+
+          // Toolbar drag
+          let isDraggingToolbar = false;
+          let offsetX, offsetY;
+          dragHandle.addEventListener('pointerdown', (event) => {
+              isDraggingToolbar = true;
+              dragHandle.classList.add('dragging');
+              offsetX = event.clientX - toolbar.getBoundingClientRect().left;
+              offsetY = event.clientY - toolbar.getBoundingClientRect().top;
+              toolbar.style.transition = 'none';
+              dragHandle.setPointerCapture(event.pointerId);
+          });
+
+          document.addEventListener('pointermove', (event) => {
+              if (!isDraggingToolbar) return;
+              toolbar.style.left = `${event.clientX - offsetX}px`;
+              toolbar.style.top = `${event.clientY - offsetY}px`;
+              toolbar.style.bottom = 'auto';
+              toolbar.style.transform = 'none';
+          });
+
+          document.addEventListener('pointerup', () => {
+              isDraggingToolbar = false;
+              dragHandle.classList.remove('dragging');
+          });
+
+          updateStageTransform();
+          updateStageInfo();
+      </script>
+  </body></html>
