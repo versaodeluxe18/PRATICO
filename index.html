@@ -345,10 +345,7 @@
           <!-- Color Picker Button -->
           <div class="relative">
               <button id="color-btn" class="icon-button" title="Escolher cor">
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                      <div id="color-preview" style="width: 16px; height: 16px; background-color: #000000; border: 1px solid #c6c6cd; border-radius: 2px;"></div>
-                      <span class="material-symbols-outlined text-[20px]">palette</span>
-                  </div>
+                  <div id="color-preview" style="width: 16px; height: 16px; background-color: #000000; border: 1px solid #c6c6cd; border-radius: 2px;"></div>
               </button>
               <div class="color-picker-container" id="color-picker">
                   <input id="color-input" class="color-input" type="color" value="#000000">
@@ -597,22 +594,37 @@
               canvas.style.left = '0';
               canvas.style.cursor = 'crosshair';
               canvas.style.zIndex = '5';
+              canvas.style.pointerEvents = 'none';
               
               stage.appendChild(canvas);
               state.drawingCanvas = canvas;
               return canvas;
           }
 
+          function getCanvasCoordinates(event) {
+              // Get the wrapper's bounding rect to account for offset and zoom
+              const wrapperRect = stageWrapper.getBoundingClientRect();
+              
+              // Get position relative to wrapper
+              const x = event.clientX - wrapperRect.left;
+              const y = event.clientY - wrapperRect.top;
+              
+              // Convert from screen coordinates to stage coordinates
+              // Reverse the zoom and offset transformations
+              const stageX = (x / state.zoom) - (state.stageOffsetX / state.zoom);
+              const stageY = (y / state.zoom) - (state.stageOffsetY / state.zoom);
+              
+              return { x: stageX, y: stageY };
+          }
+
           function startDrawing(event) {
               if (!state.currentTool || state.currentTool === 'none') return;
               
               const canvas = state.drawingCanvas || createDrawingCanvas();
-              const rect = stage.getBoundingClientRect();
-              const scaleX = canvas.width / stage.offsetWidth;
-              const scaleY = canvas.height / stage.offsetHeight;
+              const coords = getCanvasCoordinates(event);
               
-              const startX = (event.clientX - rect.left) * scaleX;
-              const startY = (event.clientY - rect.top) * scaleY;
+              const startX = coords.x;
+              const startY = coords.y;
               
               const ctx = canvas.getContext('2d');
               ctx.strokeStyle = state.currentColor;
@@ -631,46 +643,41 @@
               function draw(moveEvent) {
                   if (!state.isDrawing) return;
                   
-                  const currentX = (moveEvent.clientX - rect.left) * scaleX;
-                  const currentY = (moveEvent.clientY - rect.top) * scaleY;
+                  const moveCoords = getCanvasCoordinates(moveEvent);
                   
                   if (state.currentTool === 'pencil') {
-                      ctx.lineTo(currentX, currentY);
+                      ctx.lineTo(moveCoords.x, moveCoords.y);
                       ctx.stroke();
                   }
               }
               
-              function stopDrawing() {
+              function stopDrawing(endEvent) {
                   state.isDrawing = false;
                   
+                  const endCoords = getCanvasCoordinates(endEvent);
+                  
                   if (state.currentTool === 'circle') {
-                      const endX = (event.clientX - rect.left) * scaleX;
-                      const endY = (event.clientY - rect.top) * scaleY;
-                      const radius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+                      const radius = Math.sqrt(Math.pow(endCoords.x - startX, 2) + Math.pow(endCoords.y - startY, 2));
                       ctx.beginPath();
                       ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
                       ctx.stroke();
                   } else if (state.currentTool === 'rectangle') {
-                      const endX = (event.clientX - rect.left) * scaleX;
-                      const endY = (event.clientY - rect.top) * scaleY;
-                      const width = endX - startX;
-                      const height = endY - startY;
+                      const width = endCoords.x - startX;
+                      const height = endCoords.y - startY;
                       ctx.strokeRect(startX, startY, width, height);
                   } else if (state.currentTool === 'square') {
-                      const endX = (event.clientX - rect.left) * scaleX;
-                      const endY = (event.clientY - rect.top) * scaleY;
-                      const side = Math.max(Math.abs(endX - startX), Math.abs(endY - startY));
+                      const side = Math.max(Math.abs(endCoords.x - startX), Math.abs(endCoords.y - startY));
                       ctx.strokeRect(startX, startY, side, side);
                   }
                   
-                  canvas.removeEventListener('pointermove', draw);
-                  canvas.removeEventListener('pointerup', stopDrawing);
-                  canvas.removeEventListener('pointercancel', stopDrawing);
+                  stage.removeEventListener('pointermove', draw);
+                  stage.removeEventListener('pointerup', stopDrawing);
+                  stage.removeEventListener('pointercancel', stopDrawing);
               }
               
-              canvas.addEventListener('pointermove', draw);
-              canvas.addEventListener('pointerup', stopDrawing);
-              canvas.addEventListener('pointercancel', stopDrawing);
+              stage.addEventListener('pointermove', draw);
+              stage.addEventListener('pointerup', stopDrawing);
+              stage.addEventListener('pointercancel', stopDrawing);
           }
 
           function activateTool(tool) {
@@ -678,10 +685,12 @@
               
               if (state.currentTool) {
                   stage.classList.add('drawing');
+                  stage.style.pointerEvents = 'auto';
                   if (!state.drawingCanvas) createDrawingCanvas();
                   stage.addEventListener('pointerdown', startDrawing);
               } else {
                   stage.classList.remove('drawing');
+                  stage.style.pointerEvents = 'none';
                   stage.removeEventListener('pointerdown', startDrawing);
               }
               
@@ -695,9 +704,11 @@
               
               if (state.currentTool === 'eyedropper') {
                   stage.classList.add('eyedropper');
+                  stage.style.pointerEvents = 'auto';
                   stage.addEventListener('click', pickColor, true);
               } else {
                   stage.classList.remove('eyedropper');
+                  stage.style.pointerEvents = 'none';
                   stage.removeEventListener('click', pickColor, true);
               }
               
@@ -711,12 +722,15 @@
               event.stopPropagation();
               
               const canvas = state.drawingCanvas;
-              const rect = stage.getBoundingClientRect();
-              const scaleX = canvas.width / stage.offsetWidth;
-              const scaleY = canvas.height / stage.offsetHeight;
+              const coords = getCanvasCoordinates(event);
               
-              const x = Math.floor((event.clientX - rect.left) * scaleX);
-              const y = Math.floor((event.clientY - rect.top) * scaleY);
+              const x = Math.floor(coords.x);
+              const y = Math.floor(coords.y);
+              
+              // Ensure coordinates are within bounds
+              if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) {
+                  return;
+              }
               
               const ctx = canvas.getContext('2d');
               const imageData = ctx.getImageData(x, y, 1, 1);
@@ -773,7 +787,7 @@
                       const width = Number(prompt('Largura do palco em pixels:', state.stageWidth));
                       const height = Number(prompt('Altura do palco em pixels:', state.stageHeight));
                       if (width > 0 && height > 0) setStageSize(Math.round(width), Math.round(height));
-                  } else {
+                  } else if (size) {
                       const [width, height] = size.split('x').map(Number);
                       setStageSize(width, height);
                   }
