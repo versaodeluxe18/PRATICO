@@ -1,5 +1,4 @@
-<!DOCTYPE html><html class="light" lang="pt-BR"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-        <script>
+<!DOCTYPE html><html class="light" lang="pt-BR"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz@20;24&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><title>PRATICO - Editor de imagens</title><script>
         window.tailwind = window.tailwind || {};
         window.tailwind.config = {
           darkMode: "class",
@@ -183,6 +182,90 @@
               background-color: #dce2f3;
               color: #000;
           }
+          
+          /* Drawing canvas styles */
+          #stage.drawing { cursor: crosshair; }
+          #stage.drawing-pencil { cursor: crosshair; }
+          #stage.eyedropper { cursor: crosshair; }
+          
+          /* Color picker styles */
+          .color-picker-container {
+              position: absolute;
+              bottom: 100%;
+              background: #f8f9fb;
+              border: 1px solid #c6c6cd;
+              border-radius: 8px;
+              padding: 12px;
+              display: none;
+              flex-direction: column;
+              z-index: 100;
+              gap: 8px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          }
+          .color-picker-container.show {
+              display: flex;
+          }
+          .color-input {
+              width: 100%;
+              height: 40px;
+              border: 1px solid #c6c6cd;
+              border-radius: 4px;
+              cursor: pointer;
+          }
+          .color-preview {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              font-size: 12px;
+          }
+          .color-preview-square {
+              width: 24px;
+              height: 24px;
+              border-radius: 4px;
+              border: 1px solid #c6c6cd;
+          }
+          
+          /* Shape menu styles */
+          .shape-menu {
+              position: absolute;
+              bottom: 100%;
+              background: #f8f9fb;
+              border: 1px solid #c6c6cd;
+              border-radius: 8px;
+              display: none;
+              flex-direction: column;
+              z-index: 100;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          }
+          .shape-menu.show {
+              display: flex;
+          }
+          .shape-menu-item {
+              padding: 8px 12px;
+              cursor: pointer;
+              border: none;
+              background: transparent;
+              width: 100%;
+              text-align: left;
+              font-size: 13px;
+              color: #191c1e;
+              transition: background-color 0.2s;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+          }
+          .shape-menu-item:hover {
+              background-color: #edeef0;
+          }
+          .shape-menu-item:first-child {
+              border-radius: 8px 8px 0 0;
+          }
+          .shape-menu-item:last-child {
+              border-radius: 0 0 8px 8px;
+          }
+          .shape-icon {
+              font-size: 16px;
+          }
       </style>
 
       <main class="canvas-area relative flex flex-col items-center justify-center gap-4" id="workspace">
@@ -194,7 +277,7 @@
               <div id="stage" class="relative overflow-hidden checkerboard" style="width: 1080px; height: 1080px;"></div>
           </div>
 
-          <button id="quick-import" class="fixed bottom-24 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-90 hover:scale-105">
+          <button id="quick-import" class="fixed bottom-24 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-95 hover:shadow-xl" title="Importar imagem">
               <span class="material-symbols-outlined text-2xl" data-icon="add">add</span>
           </button>
       </main>
@@ -234,6 +317,50 @@
           
           <div class="w-px h-6 bg-outline-variant mx-1"></div>
           
+          <!-- Shapes Button -->
+          <div class="relative">
+              <button id="shapes-btn" class="icon-button" title="Desenhar formas">
+                  <span class="material-symbols-outlined text-[20px]">shapes</span>
+              </button>
+              <div class="shape-menu" id="shapes-menu">
+                  <button class="shape-menu-item" data-shape="pencil" title="Lápis">
+                      <span class="shape-icon">✏️</span>
+                      <span>Lápis</span>
+                  </button>
+                  <button class="shape-menu-item" data-shape="circle" title="Círculo">
+                      <span class="shape-icon">⭕</span>
+                      <span>Círculo</span>
+                  </button>
+                  <button class="shape-menu-item" data-shape="rectangle" title="Retângulo">
+                      <span class="shape-icon">▭</span>
+                      <span>Retângulo</span>
+                  </button>
+                  <button class="shape-menu-item" data-shape="square" title="Quadrado">
+                      <span class="shape-icon">◻️</span>
+                      <span>Quadrado</span>
+                  </button>
+              </div>
+          </div>
+          
+          <!-- Color Picker Button -->
+          <div class="relative">
+              <button id="color-btn" class="icon-button" title="Escolher cor">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                      <div id="color-preview" style="width: 16px; height: 16px; background-color: #000000; border: 1px solid #c6c6cd; border-radius: 2px;"></div>
+                      <span class="material-symbols-outlined text-[20px]">palette</span>
+                  </div>
+              </button>
+              <div class="color-picker-container" id="color-picker">
+                  <input id="color-input" class="color-input" type="color" value="#000000">
+                  <button id="eyedropper-btn" class="toolbar-dropdown-item" style="gap: 8px; display: flex; align-items: center;">
+                      <span class="material-symbols-outlined text-[16px]">eyedropper</span>
+                      <span>Contagotas</span>
+                  </button>
+              </div>
+          </div>
+          
+          <div class="w-px h-6 bg-outline-variant mx-1"></div>
+          
           <button id="save-png" class="icon-button bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed" title="Salvar como PNG">
               <span class="material-symbols-outlined text-[18px]">download</span>
           </button>
@@ -253,8 +380,28 @@
           const zoomControl = document.getElementById('zoom-control');
           const savePngButton = document.getElementById('save-png');
           const dragHandle = document.getElementById('toolbar-drag-handle');
+          
+          // New elements
+          const shapesBtn = document.getElementById('shapes-btn');
+          const shapesMenu = document.getElementById('shapes-menu');
+          const colorBtn = document.getElementById('color-btn');
+          const colorPicker = document.getElementById('color-picker');
+          const colorInput = document.getElementById('color-input');
+          const colorPreview = document.getElementById('color-preview');
+          const eyedropperBtn = document.getElementById('eyedropper-btn');
 
-          const state = { stageWidth: 1080, stageHeight: 1080, zoom: 0.5, stageOffsetX: 0, stageOffsetY: 0, selectedImage: null };
+          const state = { 
+              stageWidth: 1080, 
+              stageHeight: 1080, 
+              zoom: 0.5, 
+              stageOffsetX: 0, 
+              stageOffsetY: 0, 
+              selectedImage: null,
+              currentTool: null,
+              currentColor: '#000000',
+              isDrawing: false,
+              drawingCanvas: null
+          };
 
           function updateStageTransform() {
               stageWrapper.style.transform = `translate(${state.stageOffsetX}px, ${state.stageOffsetY}px) scale(${state.zoom})`;
@@ -436,6 +583,157 @@
               container.addEventListener('pointercancel', stopImageResize);
           }
 
+          // Drawing functionality
+          function createDrawingCanvas() {
+              if (state.drawingCanvas) {
+                  state.drawingCanvas.remove();
+              }
+              
+              const canvas = document.createElement('canvas');
+              canvas.width = state.stageWidth;
+              canvas.height = state.stageHeight;
+              canvas.style.position = 'absolute';
+              canvas.style.top = '0';
+              canvas.style.left = '0';
+              canvas.style.cursor = 'crosshair';
+              canvas.style.zIndex = '5';
+              
+              stage.appendChild(canvas);
+              state.drawingCanvas = canvas;
+              return canvas;
+          }
+
+          function startDrawing(event) {
+              if (!state.currentTool || state.currentTool === 'none') return;
+              
+              const canvas = state.drawingCanvas || createDrawingCanvas();
+              const rect = stage.getBoundingClientRect();
+              const scaleX = canvas.width / stage.offsetWidth;
+              const scaleY = canvas.height / stage.offsetHeight;
+              
+              const startX = (event.clientX - rect.left) * scaleX;
+              const startY = (event.clientY - rect.top) * scaleY;
+              
+              const ctx = canvas.getContext('2d');
+              ctx.strokeStyle = state.currentColor;
+              ctx.lineWidth = 2;
+              ctx.lineCap = 'round';
+              ctx.lineJoin = 'round';
+              ctx.fillStyle = state.currentColor;
+              
+              state.isDrawing = true;
+              
+              if (state.currentTool === 'pencil') {
+                  ctx.beginPath();
+                  ctx.moveTo(startX, startY);
+              }
+              
+              function draw(moveEvent) {
+                  if (!state.isDrawing) return;
+                  
+                  const currentX = (moveEvent.clientX - rect.left) * scaleX;
+                  const currentY = (moveEvent.clientY - rect.top) * scaleY;
+                  
+                  if (state.currentTool === 'pencil') {
+                      ctx.lineTo(currentX, currentY);
+                      ctx.stroke();
+                  }
+              }
+              
+              function stopDrawing() {
+                  state.isDrawing = false;
+                  
+                  if (state.currentTool === 'circle') {
+                      const endX = (event.clientX - rect.left) * scaleX;
+                      const endY = (event.clientY - rect.top) * scaleY;
+                      const radius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+                      ctx.beginPath();
+                      ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
+                      ctx.stroke();
+                  } else if (state.currentTool === 'rectangle') {
+                      const endX = (event.clientX - rect.left) * scaleX;
+                      const endY = (event.clientY - rect.top) * scaleY;
+                      const width = endX - startX;
+                      const height = endY - startY;
+                      ctx.strokeRect(startX, startY, width, height);
+                  } else if (state.currentTool === 'square') {
+                      const endX = (event.clientX - rect.left) * scaleX;
+                      const endY = (event.clientY - rect.top) * scaleY;
+                      const side = Math.max(Math.abs(endX - startX), Math.abs(endY - startY));
+                      ctx.strokeRect(startX, startY, side, side);
+                  }
+                  
+                  canvas.removeEventListener('pointermove', draw);
+                  canvas.removeEventListener('pointerup', stopDrawing);
+                  canvas.removeEventListener('pointercancel', stopDrawing);
+              }
+              
+              canvas.addEventListener('pointermove', draw);
+              canvas.addEventListener('pointerup', stopDrawing);
+              canvas.addEventListener('pointercancel', stopDrawing);
+          }
+
+          function activateTool(tool) {
+              state.currentTool = state.currentTool === tool ? null : tool;
+              
+              if (state.currentTool) {
+                  stage.classList.add('drawing');
+                  if (!state.drawingCanvas) createDrawingCanvas();
+                  stage.addEventListener('pointerdown', startDrawing);
+              } else {
+                  stage.classList.remove('drawing');
+                  stage.removeEventListener('pointerdown', startDrawing);
+              }
+              
+              document.querySelectorAll('.shape-menu-item').forEach(item => {
+                  item.style.backgroundColor = item.dataset.shape === state.currentTool ? '#dce2f3' : 'transparent';
+              });
+          }
+
+          function activateEyedropper() {
+              state.currentTool = state.currentTool === 'eyedropper' ? null : 'eyedropper';
+              
+              if (state.currentTool === 'eyedropper') {
+                  stage.classList.add('eyedropper');
+                  stage.addEventListener('click', pickColor, true);
+              } else {
+                  stage.classList.remove('eyedropper');
+                  stage.removeEventListener('click', pickColor, true);
+              }
+              
+              eyedropperBtn.style.backgroundColor = state.currentTool === 'eyedropper' ? '#dce2f3' : 'transparent';
+          }
+
+          function pickColor(event) {
+              if (!state.drawingCanvas) return;
+              
+              event.preventDefault();
+              event.stopPropagation();
+              
+              const canvas = state.drawingCanvas;
+              const rect = stage.getBoundingClientRect();
+              const scaleX = canvas.width / stage.offsetWidth;
+              const scaleY = canvas.height / stage.offsetHeight;
+              
+              const x = Math.floor((event.clientX - rect.left) * scaleX);
+              const y = Math.floor((event.clientY - rect.top) * scaleY);
+              
+              const ctx = canvas.getContext('2d');
+              const imageData = ctx.getImageData(x, y, 1, 1);
+              const data = imageData.data;
+              
+              const hex = '#' + [data[0], data[1], data[2]].map(x => {
+                  const hex = x.toString(16);
+                  return hex.length === 1 ? '0' + hex : hex;
+              }).join('').toUpperCase();
+              
+              state.currentColor = hex;
+              colorInput.value = hex;
+              colorPreview.style.backgroundColor = hex;
+              
+              activateEyedropper();
+          }
+
           function openImporter() { imageInput.click(); }
 
           imageInput.addEventListener('change', (event) => {
@@ -451,12 +749,20 @@
           stageSizeBtn.addEventListener('click', () => {
               stageSizeDropdown.classList.toggle('show');
               stageSizeBtn.classList.toggle('active');
+              shapesMenu.classList.remove('show');
+              shapesBtn.classList.remove('active');
+              colorPicker.classList.remove('show');
+              colorBtn.classList.remove('active');
           });
 
           document.addEventListener('click', (event) => {
               if (!toolbar.contains(event.target)) {
                   stageSizeDropdown.classList.remove('show');
                   stageSizeBtn.classList.remove('active');
+                  shapesMenu.classList.remove('show');
+                  shapesBtn.classList.remove('active');
+                  colorPicker.classList.remove('show');
+                  colorBtn.classList.remove('active');
               }
           });
 
@@ -476,6 +782,45 @@
               });
           });
 
+          // Shapes menu
+          shapesBtn.addEventListener('click', () => {
+              shapesMenu.classList.toggle('show');
+              shapesBtn.classList.toggle('active');
+              stageSizeDropdown.classList.remove('show');
+              stageSizeBtn.classList.remove('active');
+              colorPicker.classList.remove('show');
+              colorBtn.classList.remove('active');
+          });
+
+          document.querySelectorAll('.shape-menu-item').forEach(item => {
+              item.addEventListener('click', (event) => {
+                  const tool = event.currentTarget.dataset.shape;
+                  activateTool(tool);
+              });
+          });
+
+          // Color picker
+          colorBtn.addEventListener('click', () => {
+              colorPicker.classList.toggle('show');
+              colorBtn.classList.toggle('active');
+              stageSizeDropdown.classList.remove('show');
+              stageSizeBtn.classList.remove('active');
+              shapesMenu.classList.remove('show');
+              shapesBtn.classList.remove('active');
+          });
+
+          colorInput.addEventListener('change', (event) => {
+              state.currentColor = event.target.value;
+              colorPreview.style.backgroundColor = state.currentColor;
+          });
+
+          eyedropperBtn.addEventListener('click', (event) => {
+              event.preventDefault();
+              activateEyedropper();
+              colorPicker.classList.remove('show');
+              colorBtn.classList.remove('active');
+          });
+
           zoomControl.addEventListener('input', (event) => setZoom(event.target.value));
           importImageBtn.addEventListener('click', openImporter);
           quickImportButton.addEventListener('click', openImporter);
@@ -485,6 +830,17 @@
               canvas.width = state.stageWidth;
               canvas.height = state.stageHeight;
               const context = canvas.getContext('2d');
+              
+              // Draw white background
+              context.fillStyle = '#ffffff';
+              context.fillRect(0, 0, canvas.width, canvas.height);
+              
+              // Draw drawing canvas
+              if (state.drawingCanvas) {
+                  context.drawImage(state.drawingCanvas, 0, 0);
+              }
+              
+              // Draw images
               [...stage.querySelectorAll('.image-container')].forEach((container) => {
                   const image = container.querySelector('img');
                   context.drawImage(
@@ -495,6 +851,7 @@
                       Number(container.dataset.height || image.naturalHeight)
                   );
               });
+              
               const link = document.createElement('a');
               link.download = `palco-${state.stageWidth}x${state.stageHeight}.png`;
               link.href = canvas.toDataURL('image/png');
@@ -502,7 +859,7 @@
           });
 
           stage.addEventListener('pointerdown', (event) => {
-              if (event.target === stage && event.button === 0) selectImage(null);
+              if (event.target === stage && event.button === 0 && !state.currentTool) selectImage(null);
           });
 
           workspace.addEventListener('contextmenu', (event) => event.preventDefault());
@@ -562,5 +919,8 @@
 
           updateStageTransform();
           updateStageInfo();
+          
+          // Initialize color preview
+          colorPreview.style.backgroundColor = state.currentColor;
       </script>
   </body></html>
